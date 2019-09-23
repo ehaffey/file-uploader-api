@@ -3,11 +3,14 @@ const express = require('express')
 // Passport docs: http://www.passportjs.org/docs/
 const passport = require('passport')
 
+const multer = require('multer')
+const upload = multer({ storage: multer.memoryStorage() })
+
 // pull in Mongoose model for fileUpload
 const FileUpload = require('../models/upload')
 
 // require S3 upload module
-const awsFileUpload = require('../../lib/fileUploadApi')
+const awsFileUploadApi = require('../../lib/fileUploadApi')
 
 // this is a collection of methods that help us detect situations when we need
 // to throw a custom error
@@ -60,15 +63,21 @@ router.get('/fileUploads/:id', requireToken, (req, res, next) => {
 
 // CREATE
 // POST /fileUpload
-router.post('/fileUploads', requireToken, (req, res, next) => {
+router.post('/fileUploads', upload.single('upload-test'), (req, res, next) => {
   // set owner of new fileUpload to be current user
-  req.body.fileUpload.owner = req.user.id
-
-  FileUpload.create(req.body.fileUpload)
-    // respond to succesful `create` with status 201 and JSON of new "fileUpload"
-    .then(fileUpload => {
-      res.status(201).json({ fileUpload: fileUpload.toObject() })
-    })
+  //  req.body.fileUpload.owner = req.user.id
+//  console.log(req.file
+  awsFileUploadApi(req.file.originalname, req.file.buffer)
+    .then(console.log)
+    .then(res.status(201))
+  // FileUpload.create(req.body.fileUpload)
+  //   .then(fileUpload => {
+  //     awsFileUploadApi(req.file.originalname, req.file.buffer)
+  //   })
+  //   // respond to succesful `create` with status 201 and JSON of new "fileUpload"
+  //   .then(fileUpload => {
+  //     res.status(201).json({ fileUpload: fileUpload.toObject() })
+  //   })
     // if an error occurs, pass it off to our error handler
     // the error handler needs the error message and the `res` object so that it
     // can send an error message back to the client
